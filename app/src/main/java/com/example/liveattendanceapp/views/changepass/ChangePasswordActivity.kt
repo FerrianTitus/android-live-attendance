@@ -2,7 +2,6 @@ package com.example.liveattendanceapp.views.changepass
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.example.liveattendanceapp.R
 import com.example.liveattendanceapp.databinding.ActivityChangePasswordBinding
 
 class ChangePasswordActivity : AppCompatActivity() {
