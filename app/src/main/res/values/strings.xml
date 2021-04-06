@@ -28,4 +28,15 @@
     <string name="success">Success</string>
     <string name="not_granted">Not Granted</string>
     <string name="required_permission">Required Permission</string>
+    <string name="searching_your_location">Searching your location...</string>
+    <string name="failed_to_capture_image">Failed to capture image</string>
+    <string name="alert">Alert</string>
+    <string name="please_take_your_photo">Please take you photo first</string>
+    <string name="are_you_sure">Are you sure?</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="success_check_in">Success check-in</string>
+    <string name="success_check_out">Success check-out</string>
+    <string name="something_wrong">Something Wrong</string>
+    <string name="you_already_present">You already present</string>
 </resources>
