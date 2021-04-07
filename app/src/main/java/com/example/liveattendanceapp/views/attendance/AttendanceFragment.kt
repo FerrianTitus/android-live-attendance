@@ -3,7 +3,6 @@ package com.example.liveattendanceapp.views.attendance
 import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Context.LOCATION_SERVICE
 import android.content.Intent
 import android.content.IntentSender
@@ -57,7 +56,8 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
-
+import kotlin.collections.HashMap
+import kotlin.jvm.Throws
 
 class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
@@ -100,8 +100,8 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
     private var isCheckIn = false
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+            inflater: LayoutInflater, container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View?{
         binding = FragmentAttendanceBinding.inflate(inflater, container, false)
         bindingBottomSheet = binding?.layoutBottomSheet
@@ -135,18 +135,20 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_IMAGE_CAPTURE) {
-            if (resultCode == RESULT_OK) {
-                val uri = Uri.parse(currentPhotoPath)
-                bindingBottomSheet?.ivCapturePhoto?.setImageURI(uri)
-                bindingBottomSheet?.ivCapturePhoto?.adjustViewBounds = true
-            }
-        }else{
-            if (currentPhotoPath.isNotEmpty()){
-                val file = File(currentPhotoPath)
-                file.delete()
-                currentPhotoPath = ""
-                context?.toast(getString(R.string.failed_to_capture_image))
+        if (requestCode == REQUEST_CODE_IMAGE_CAPTURE){
+            if (resultCode == RESULT_OK){
+                if (currentPhotoPath.isNotEmpty()){
+                    val uri = Uri.parse(currentPhotoPath)
+                    bindingBottomSheet?.ivCapturePhoto?.setImageURI(uri)
+                    bindingBottomSheet?.ivCapturePhoto?.adjustViewBounds = true
+                }
+            }else{
+                if (currentPhotoPath.isNotEmpty()){
+                    val file = File(currentPhotoPath)
+                    file.delete()
+                    currentPhotoPath = ""
+                    context?.toast(getString(R.string.failed_to_capture_image))
+                }
             }
         }
     }
@@ -157,7 +159,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
         }
 
         bindingBottomSheet?.ivCapturePhoto?.setOnClickListener {
-            if (checkPermissionCamera()) {
+            if (checkPermissionCamera()){
                 openCamera()
             }else{
                 setRequestPermissionCamera()
@@ -167,7 +169,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
         bindingBottomSheet?.btnCheckIn?.setOnClickListener {
             val token = HawkStorage.instance(context).getToken()
             if (checkValidation()){
-                if (isCheckIn) {
+                if (isCheckIn){
                     AlertDialog.Builder(context)
                             .setTitle(getString(R.string.are_you_sure))
                             .setPositiveButton(getString(R.string.yes)){ _ , _ ->
@@ -216,10 +218,10 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
             val requestAddress = address.toRequestBody(mediaTypeText)
             val requestType = type.toRequestBody(mediaTypeText)
 
-            params ["lat"] = requestLatitude
-            params ["long"] = requestLongitude
-            params ["address"] = requestAddress
-            params ["type"] = requestType
+            params["lat"] = requestLatitude
+            params["long"] = requestLongitude
+            params["address"] = requestAddress
+            params["type"] = requestType
 
             val requestPhotoFile = file.asRequestBody(mediaTypeFile)
             val multipartBody = MultipartBody.Part.createFormData("photo", file.name, requestPhotoFile)
@@ -231,7 +233,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
                                 response: Response<AttendanceResponse>
                         ) {
                             MyDialog.hideDialog()
-                            if (response.isSuccessful) {
+                            if (response.isSuccessful){
                                 val attendanceResponse = response.body()
                                 currentPhotoPath = ""
                                 bindingBottomSheet?.ivCapturePhoto?.setImageDrawable(
@@ -241,7 +243,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
                                 if (type == "in"){
                                     MyDialog.dynamicDialog(context, getString(R.string.success_check_in), attendanceResponse?.message.toString())
-                                } else {
+                                }else{
                                     MyDialog.dynamicDialog(context, getString(R.string.success_check_out), attendanceResponse?.message.toString())
                                 }
                                 checkIfAlreadyPresent()
@@ -261,7 +263,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
     private fun checkIfAlreadyPresent() {
         val token = HawkStorage.instance(context).getToken()
-        val currentDate = MyDate.getCurrentDataForServer()
+        val currentDate = MyDate.getCurrentDateForServer()
 
         ApiServices.getLiveAttendanceServices()
                 .getHistoryAttendance("Bearer $token", currentDate, currentDate)
@@ -272,13 +274,13 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
                     ) {
                         if (response.isSuccessful){
                             val histories = response.body()?.histories
-                            if (histories != null && histories.isNotEmpty()) {
-                                if (histories[0]?.status == 1) {
+                            if (histories != null && histories.isNotEmpty()){
+                                if (histories[0]?.status == 1){
                                     isCheckIn = false
                                     checkIsCheckIn()
                                     bindingBottomSheet?.btnCheckIn?.isEnabled = false
                                     bindingBottomSheet?.btnCheckIn?.text = getString(R.string.you_already_present)
-                                } else {
+                                }else{
                                     isCheckIn = true
                                     checkIsCheckIn()
                                 }
@@ -294,7 +296,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun checkIsCheckIn() {
-        if (isCheckIn) {
+        if (isCheckIn){
             bindingBottomSheet?.btnCheckIn?.background = ContextCompat.getDrawable(context!!, R.drawable.bg_check_out)
             bindingBottomSheet?.btnCheckIn?.text = getString(R.string.check_out)
         }else{
@@ -305,7 +307,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
     private fun checkValidation(): Boolean {
         if (currentPhotoPath.isEmpty()){
-            MyDialog.dynamicDialog(context,getString(R.string.alert), getString(R.string.please_take_your_photo))
+            MyDialog.dynamicDialog(context, getString(R.string.alert), getString(R.string.please_take_your_photo))
             return false
         }
         return true
@@ -347,7 +349,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
                     }
                 }
 
-                if (isHasPermission) {
+                if (isHasPermission){
                     setupMaps()
                 }else{
                     val message = permissionNotGranted.toString() + "\n" + getString(R.string.not_granted)
@@ -367,7 +369,7 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
                     }
                 }
 
-                if (isHasPermission) {
+                if (isHasPermission){
                     openCamera()
                 }else{
                     val message = permissionNotGranted.toString() + "\n" + getString(R.string.not_granted)
@@ -388,9 +390,9 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
                 }
                 photoFile?.also {
                     val photoUri = FileProvider.getUriForFile(
-                        context,
-                        BuildConfig.APPLICATION_ID + ".fileprovider",
-                        it
+                            context,
+                            BuildConfig.APPLICATION_ID + ".fileprovider",
+                            it
                     )
                     cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
                     startActivityForResult(cameraIntent, REQUEST_CODE_IMAGE_CAPTURE)
@@ -421,9 +423,10 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
 
     override fun onMapReady(googleMap: GoogleMap?) {
         map = googleMap
-        if (checkPermission()) {
-            val gunadarma = LatLng(-6.367963791499807, 106.83322406903427)
-            map?.moveCamera(CameraUpdateFactory.newLatLng(gunadarma))
+        if (checkPermission()){
+            //Coordinate Kantor Codepolitan
+            val codepolitan = LatLng(-6.879513, 107.590085)
+            map?.moveCamera(CameraUpdateFactory.newLatLng(codepolitan))
             map?.animateCamera(CameraUpdateFactory.zoomTo(20f))
 
             goToCurrentLocation()
@@ -432,12 +435,10 @@ class AttendanceFragment : Fragment(), OnMapReadyCallback {
         }
     }
 
-
-
     private fun goToCurrentLocation() {
         bindingBottomSheet?.tvCurrentLocation?.text = getString(R.string.searching_your_location)
-        if (checkPermission()) {
-            if (isLocationEnabled()) {
+        if (checkPermission()){
+            if (isLocationEnabled()){
                 map?.isMyLocationEnabled = true
                 map?.uiSettings?.isMyLocationButtonEnabled = false
 
